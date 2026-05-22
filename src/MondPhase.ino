@@ -11,6 +11,7 @@
 #include <WiFi.h>
 #include <WiFiMulti.h>
 #include <time.h>
+#include <esp_sntp.h>
 
 #include <Adafruit_GFX.h>     // Core graphics library
 #include <Adafruit_GC9A01A.h>
@@ -20,13 +21,14 @@
 // ── Konfiguration ────────────────────────────────────────────────────────────
 
 #include "credentials.h"
+#include "options_config.h"
 
 WiFiMulti wifiMulti;
 
 // NTP
-constexpr long   GMT_OFFSET_SEC  = 0;    // UTC verwenden; Zeitzone lokal egal
-constexpr int    DAYLIGHT_OFFSET = 0;
-constexpr char   NTP_SERVER[]    = "pool.ntp.org";
+constexpr long   GMT_OFFSET_SEC  = OPTIONS_CONFIG_DEFAULT_GMT_OFFSET_SEC;
+constexpr int    DAYLIGHT_OFFSET = OPTIONS_CONFIG_DEFAULT_DAYLIGHT_OFFSET;
+constexpr char   NTP_SERVER[]    = OPTIONS_CONFIG_DEFAULT_NTP_SERVER;
 
 // Mond-Rendering
 extern void calculateMoon(const struct tm& timeinfo, bool printInfo, Adafruit_GC9A01A* tft);
@@ -219,6 +221,33 @@ void cmd_config_(SerialCommands* sender)
     sender->GetSerial()->println("Aktuelle Konfiguration:");
     sender->GetSerial()->printf("  Latitude:  %.6f\n", configLatitude);
     sender->GetSerial()->printf("  Longitude: %.6f\n", configLongitude);
+
+    struct tm now;
+    if (getLocalTime(&now, 0)) {
+        char buf[32];
+        strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S UTC", &now);
+        sender->GetSerial()->printf("  Zeit:      %s\n", buf);
+    } else {
+        sender->GetSerial()->println("  Zeit:      (nicht verfügbar)");
+    }
+
+    const char* ntpStatus = "unbekannt";
+    switch (sntp_get_sync_status()) {
+        case SNTP_SYNC_STATUS_RESET:       ntpStatus = "nicht synchronisiert"; break;
+        case SNTP_SYNC_STATUS_COMPLETED:   ntpStatus = "synchronisiert";       break;
+        case SNTP_SYNC_STATUS_IN_PROGRESS: ntpStatus = "synchronisiert wird";  break;
+    }
+    sender->GetSerial()->printf("  NTP:       %s (%s)\n", ntpStatus, NTP_SERVER);
+
+    if (!wifiOn) {
+        sender->GetSerial()->println("  WLAN:      deaktiviert");
+    } else if (WiFi.status() == WL_CONNECTED) {
+        sender->GetSerial()->printf("  WLAN:      verbunden mit %s (%d dBm, IP %s)\n",
+            WiFi.SSID().c_str(), (int) WiFi.RSSI(), WiFi.localIP().toString().c_str());
+    } else {
+        sender->GetSerial()->println("  WLAN:      nicht verbunden");
+    }
+
     sender->GetSerial()->printf("  Options:   %d (0x%X)\n", configDisplayOptions, configDisplayOptions);
     sender->GetSerial()->printf("    [%c] darken_unlit    (1)\n",   (configDisplayOptions & 1) ? 'x' : ' ');
     sender->GetSerial()->printf("    [%c] bluish_tint     (2)\n",   (configDisplayOptions & 2) ? 'x' : ' ');

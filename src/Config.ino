@@ -1,12 +1,13 @@
 #include <Arduino.h>
 #include <Preferences.h>
+#include "options_config.h"
 
 // Persistente Konfiguration (RAM-Kopie der NVS-Werte).
-// Defaults werden verwendet, wenn noch nichts im Flash gespeichert wurde.
-double configLatitude       = 51.0;
-double configLongitude      =  9.0;
-// Default: OPTION_DARKEN_UNLIT (1) | OPTION_USE_LIBRATION (8) = 9
-int    configDisplayOptions = 9;
+// Defaults stammen aus options_config.h und werden verwendet,
+// wenn noch nichts im Flash gespeichert wurde.
+double configLatitude       = OPTIONS_CONFIG_DEFAULT_LATITUDE;
+double configLongitude      = OPTIONS_CONFIG_DEFAULT_LONGITUDE;
+int    configDisplayOptions = OPTIONS_CONFIG_DEFAULT_OPTIONS;
 
 static Preferences prefs;
 static constexpr const char* PREFS_NAMESPACE = "moon-cfg";
