@@ -22,3 +22,10 @@
 #define OPTIONS_CONFIG_DEFAULT_GMT_OFFSET_SEC   0
 #define OPTIONS_CONFIG_DEFAULT_DAYLIGHT_OFFSET  0
 #define OPTIONS_CONFIG_DEFAULT_NTP_SERVER       "pool.ntp.org"
+
+// Default UI language used on first boot (and after an NVS erase).
+// May be overridden at runtime via `set_lang`; the new value is persisted.
+// Permitted values:
+//   0 = de    (German)
+//   1 = en-us (US English)
+#define OPTIONS_CONFIG_DEFAULT_LANGUAGE   0
